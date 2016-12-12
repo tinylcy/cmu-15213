@@ -149,7 +149,7 @@ int bitOr(int x, int y) {
  *   Rating: 1
  */
 int specialBits(void) {
-    return 2;
+    return ~(0xD7 << 14);
 }
 //2
 /*
@@ -170,7 +170,7 @@ int isZero(int x) {
  *   Rating: 2
  */
 int anyEvenBit(int x) {
-  return 2;
+  return !!(((((((0x55 << 8) | 0x55) << 8) | 0x55) << 8) | 0x55) & x);
 }
 /* 
  * negate - return -x 
@@ -191,7 +191,8 @@ int negate(int x) {
  *   Rating: 2 
  */
 int leastBitPos(int x) {
-  return 2;
+    // return (((x ^ (x - 1)) >> 1) + 1);
+	return x & (~x + 1);
 }
 //3
 /* 
@@ -236,7 +237,7 @@ int isLess(int x, int y) {
  *   Rating: 4
  */
 int isPower2(int x) {
-  return 2;
+  return !!(x & (x - 1));
 }
 /*
  * bitReverse - Reverse bits in a 32-bit word
