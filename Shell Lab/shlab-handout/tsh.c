@@ -88,8 +88,8 @@ handler_t *Signal(int signum, handler_t *handler);
 /*
  * main - The shell's main routine 
  */
-int main(int argc, char **argv) 
-{
+int main(int argc, char **argv) {
+
     char c;
     char cmdline[MAXLINE];
     int emit_prompt = 1; /* emit prompt (default) */
@@ -166,8 +166,8 @@ int main(int argc, char **argv)
 */
 void eval(char *cmdline) {
 
-	char *argv[MAXARGS];
 	char buf[MAXLINE];
+	char *argv[MAXARGS];
 	int bg;
 	pid_t pid;
 	sigset_t mask;
@@ -178,17 +178,19 @@ void eval(char *cmdline) {
 		return;
 	}
 
-	sigemptyset(&mask);
-	sigaddset(&mask, SIGCHLD);
-	sigprocmask(SIG_BLOCK, &mask, NULL);
-
 	if(!builtin_cmd(argv)) {
+
+		sigemptyset(&mask);
+		sigaddset(&mask, SIGCHLD);
+		sigprocmask(SIG_BLOCK, &mask, NULL);
+
 		if((pid = fork()) == 0) {
 			sigprocmask(SIG_UNBLOCK, &mask, NULL);
+
 			setpgid(0, 0);
 
 			if(execve(argv[0], argv, environ) < 0) {
-				unix_error("Command not found");
+				fprintf(stderr, "%s: Command not found.\n", argv[0]);
 				exit(0);
 			}
 		}
@@ -294,7 +296,7 @@ int builtin_cmd(char **argv) {
 void do_bgfg(char **argv) {
 
 	if(argv[1] == NULL) {
-		app_error("bg/fg commands require PID/JID.\n");
+		fprintf(stderr, "%s\n", "bg/fg commands require PID/JID.");
 		return;
 	}
 
@@ -305,7 +307,7 @@ void do_bgfg(char **argv) {
 	if(*argv[1] == '%') {
 		jid = atoi(argv[1] + 1);
 		if(jid <= 0) {
-			app_error("illegal JID");
+			fprintf(stderr, "%s\n", "illegal JID.");
 			return;
 		}
 		job = getjobjid(jobs, jid);
@@ -313,14 +315,14 @@ void do_bgfg(char **argv) {
 	} else {
 		pid = atoi(argv[1]);
 		if(pid <= 0) {
-			app_error("illegal PID");
+			fprintf(stderr, "%s\n", "illegal PID.");
 			return;
 		}
 		job = getjobpid(jobs, pid);
 	}
 
 	if(job == NULL) {
-		app_error("no such job");
+		fprintf(stderr, "%s\n", "no such job.");
 		return;
 	}
 
@@ -342,12 +344,8 @@ void do_bgfg(char **argv) {
  */
 void waitfg(pid_t pid) {
 
-	int status;
-	while(waitpid(pid, &status, 0) > 0) {
-		printf("job [%d] has been reaped.\n", pid2jid(pid));
-	}
-	if(errno != ECHILD) {
-		unix_error("waitfg error");
+	while(pid == fgpid(jobs)) {
+		sleep(0);
 	}
     return;
 }
@@ -393,7 +391,7 @@ void sigint_handler(int sig) {
 	}
 
 	if(kill(-pid, SIGINT) < 0) {
-		unix_error("error when kill in sigint_handler");
+		unix_error("error when kill in sigint_handler.");
 		return;
 	}
 	printf("foreground job [%d] has been killed.\n", pid2jid(pid));
@@ -415,7 +413,7 @@ void sigtstp_handler(int sig) {
 	}
 
 	if(kill(-pid, SIGTSTP) < 0) {
-		unix_error("error when kill in sigtstp_handler");
+		unix_error("error when kill in sigtstp_handler.");
 		return;
 	}
 
@@ -463,8 +461,8 @@ int maxjid(struct job_t *jobs)
 }
 
 /* addjob - Add a job to the job list */
-int addjob(struct job_t *jobs, pid_t pid, int state, char *cmdline) 
-{
+int addjob(struct job_t *jobs, pid_t pid, int state, char *cmdline) {
+
     int i;
     
     if (pid < 1)
@@ -489,8 +487,8 @@ int addjob(struct job_t *jobs, pid_t pid, int state, char *cmdline)
 }
 
 /* deletejob - Delete a job whose PID=pid from the job list */
-int deletejob(struct job_t *jobs, pid_t pid) 
-{
+int deletejob(struct job_t *jobs, pid_t pid) {
+
     int i;
 
     if (pid < 1)
@@ -529,8 +527,8 @@ struct job_t *getjobpid(struct job_t *jobs, pid_t pid) {
 }
 
 /* getjobjid  - Find a job (by JID) on the job list */
-struct job_t *getjobjid(struct job_t *jobs, int jid) 
-{
+struct job_t *getjobjid(struct job_t *jobs, int jid) {
+
     int i;
 
     if (jid < 1)
@@ -542,8 +540,8 @@ struct job_t *getjobjid(struct job_t *jobs, int jid)
 }
 
 /* pid2jid - Map process ID to job ID */
-int pid2jid(pid_t pid) 
-{
+int pid2jid(pid_t pid) {
+
     int i;
 
     if (pid < 1)
@@ -556,8 +554,8 @@ int pid2jid(pid_t pid)
 }
 
 /* listjobs - Print the job list */
-void listjobs(struct job_t *jobs) 
-{
+void listjobs(struct job_t *jobs) {
+
     int i;
     
     for (i = 0; i < MAXJOBS; i++) {
@@ -593,8 +591,8 @@ void listjobs(struct job_t *jobs)
 /*
  * usage - print a help message
  */
-void usage(void) 
-{
+void usage(void) {
+
     printf("Usage: shell [-hvp]\n");
     printf("   -h   print this message\n");
     printf("   -v   print additional diagnostic information\n");
@@ -605,8 +603,7 @@ void usage(void)
 /*
  * unix_error - unix-style error routine
  */
-void unix_error(char *msg)
-{
+void unix_error(char *msg) {
     fprintf(stdout, "%s: %s\n", msg, strerror(errno));
     exit(1);
 }
@@ -614,8 +611,7 @@ void unix_error(char *msg)
 /*
  * app_error - application-style error routine
  */
-void app_error(char *msg)
-{
+void app_error(char *msg) {
     fprintf(stdout, "%s\n", msg);
     exit(1);
 }
@@ -623,8 +619,7 @@ void app_error(char *msg)
 /*
  * Signal - wrapper for the sigaction function
  */
-handler_t *Signal(int signum, handler_t *handler) 
-{
+handler_t *Signal(int signum, handler_t *handler) {
     struct sigaction action, old_action;
 
     action.sa_handler = handler;  
@@ -640,11 +635,7 @@ handler_t *Signal(int signum, handler_t *handler)
  * sigquit_handler - The driver program can gracefully terminate the
  *    child shell by sending it a SIGQUIT signal.
  */
-void sigquit_handler(int sig) 
-{
+void sigquit_handler(int sig) {
     printf("Terminating after receipt of SIGQUIT signal\n");
     exit(1);
 }
-
-
-
